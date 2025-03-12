@@ -10,25 +10,13 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
     lowercase: true,
+     match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   },
   password: {
     type: String,
     required: true,
   },
-  watchlist: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Movie',
-}],
-favorites: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Movie',
-}],
-watchedMovies: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Movie' }],
-role:{
-  type:String,
-  enum:['admin','user'],
-  default:'user',
-},
+
 verificationToken: { type: Number },
 verificationTokenExpiration: {
   type: Date,

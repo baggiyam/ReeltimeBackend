@@ -1,0 +1,88 @@
+const express = require("express");
+const router = express.Router();
+const Movie = require("../Models/Movies");
+const User = require("../Models/User");
+const Watchlist = require("../Models/Watchlist");
+const Favorite = require("../Models/Favorites");
+const WatchedMovie = require("../Models/Watched");
+const { protect } = require("../middleware/authMiddleware");
+const handleError = require("../utils/errorHandler");
+
+router.post("/", protect, async (req, res) => {
+  try {
+    const { title, description, releaseDate, language, genre, imdbRating, poster, trailer, googleRating, suggestedToAll } = req.body;
+    const userAdded = req.user._id;
+    const newMovie = new Movie({ title, description, releaseDate, language, genre, imdbRating, googleRating, suggestedToAll, poster, trailer, userAdded });
+    await newMovie.save();
+    res.status(201).json({ message: "Movie added successfully!", movie: newMovie });
+  } catch (error) {
+    handleError(res, error, "Error adding new movie");
+  }
+});
+
+router.get("/", async (req, res) => {
+  try {
+    const movies = await Movie.find();
+    res.status(200).json(movies);
+  } catch (error) {
+    handleError(res, error, "Error fetching all movies");
+  }
+});
+
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const movie = await Movie.findById(id);
+    if (!movie) return res.status(404).json({ message: "Movie not found" });
+    res.status(200).json(movie);
+  } catch (error) {
+    handleError(res, error, "Error fetching movie details");
+  }
+});
+
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedMovie = await Movie.findByIdAndUpdate(id, req.body, { new: true });
+    if (!updatedMovie) return res.status(404).json({ message: "Movie not found" });
+    res.status(200).json(updatedMovie);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+const addToList = async (req, res, Model, listName) => {
+  try {
+    const { movieId } = req.params;
+    const userId = req.user._id;
+    const movie = await Movie.findById(movieId);
+    if (!movie) return res.status(404).json({ message: "Movie not found" });
+    const exists = await Model.findOne({ user: userId, movie: movieId });
+    if (exists) return res.status(400).json({ message: `Movie already in ${listName}` });
+    const entry = new Model({ user: userId, movie: movieId });
+    await entry.save();
+    res.status(200).json({ message: `Movie added to ${listName}` });
+  } catch (error) {
+    handleError(res, error, `Error adding movie to ${listName}`);
+  }
+};
+
+router.post("/add-to-watchlist/:movieId", protect, (req, res) => addToList(req, res, Watchlist, "watchlist"));
+router.post("/add-to-favorites/:movieId", protect, (req, res) => addToList(req, res, Favorite, "favorites"));
+router.post("/add-to-watched/:movieId", protect, (req, res) => addToList(req, res, WatchedMovie, "watched list"));
+
+const getList = async (req, res, Model) => {
+  try {
+    const userId = req.user._id;
+    const list = await Model.find({ user: userId }).populate("movie");
+    res.status(200).json(list.map(entry => entry.movie));
+  } catch (error) {
+    handleError(res, error, "Error fetching list");
+  }
+};
+
+router.get("/watchlist", protect, (req, res) => getList(req, res, Watchlist));
+router.get("/favorites", protect, (req, res) => getList(req, res, Favorite));
+router.get("/watched", protect, (req, res) => getList(req, res, WatchedMovie));
+
+module.exports = router;
