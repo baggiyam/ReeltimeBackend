@@ -72,7 +72,7 @@ router.post("/signup", async (req, res) => {
       const info = await transporter.sendMail(mailOptions);
       console.log("Verification email sent:", info.response);
       res.status(200).json({
-        message: "Signup successful!.",
+        message: "Signup successful! please check your email for verification code.",
       });
     } catch (emailError) {
       console.error("❌ Error sending email:", emailError);

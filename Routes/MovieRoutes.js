@@ -5,6 +5,31 @@ const User = require("../Models/User"); // Import the User model
 const { protect } = require("../middleware/authMiddleware");
 const handleError = require("../utils/errorHandler");
 
+router.post("/", async (req, res) => {
+  try {
+    const { title, description, releaseDate, language, genre, imdbRating, poster, trailer } = req.body;
+
+    // Create a new movie document
+    const newMovie = new Movie({
+      title,
+      description,
+      releaseDate,
+      language,
+      genre,
+      imdbRating,
+      poster,
+      trailer,
+    });
+
+    // Save the movie to the database
+    await newMovie.save();
+
+    res.status(201).json({ message: "Movie added successfully!", movie: newMovie });
+  } catch (error) {
+    handleError(res, error, "Error adding new movie");
+  }
+});
+
 router.get("/", async (req, res) => {
   try {
     const movies = await Movie.find();
