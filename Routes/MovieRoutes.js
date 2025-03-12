@@ -5,9 +5,12 @@ const User = require("../Models/User"); // Import the User model
 const { protect } = require("../middleware/authMiddleware");
 const handleError = require("../utils/errorHandler");
 
-router.post("/", async (req, res) => {
+router.post("/", protect, async (req, res) => {
   try {
-    const { title, description, releaseDate, language, genre, imdbRating, poster, trailer } = req.body;
+    const { title, description, releaseDate, language, genre, imdbRating, poster, trailer, googleRating, suggestedToAll } = req.body;
+
+    // Get the logged-in user from req.user (set by protect middleware)
+    const userAdded = req.user._id;
 
     // Create a new movie document
     const newMovie = new Movie({
@@ -17,8 +20,11 @@ router.post("/", async (req, res) => {
       language,
       genre,
       imdbRating,
+      googleRating,
+      suggestedToAll,
       poster,
       trailer,
+      userAdded, // Assign the user who added the movie
     });
 
     // Save the movie to the database
