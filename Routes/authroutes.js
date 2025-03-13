@@ -154,6 +154,47 @@ router.post("/login", async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: "Server error!", error: error.message });
   }
-});
 
+});
+router.post("/resend-code", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required!" });
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return res.status(404).json({ message: "User not found!" });
+  }
+
+  if (user.isVerified) {
+    return res.status(400).json({ message: "User is already verified!" });
+  }
+
+  try {
+    // Generate a new verification code
+    const newCode = Math.floor(100000 + Math.random() * 900000);
+    user.verificationToken = newCode;
+    user.verificationTokenExpiration = Date.now() + 24 * 60 * 60 * 1000; // 24 hours expiry
+    await user.save();
+
+    // Mail options for the verification email
+    const mailOptions = {
+      from: `"ReelTime Team" <${process.env.ADMIN_EMAIL}>`,
+      to: email,
+      subject: "Resend: Email Verification Code",
+      text: `Hello,\n\nYour new verification code is: ${newCode}\n\nBest Regards,\nReelTime Team`,
+    };
+
+    // Send the verification email
+    await transporter.sendMail(mailOptions);
+
+    res.json({ message: "Verification code resent successfully!" });
+  } catch (err) {
+    console.error("Error resending code:", err);
+    res.status(500).json({ message: "Failed to resend code. Try again later!" });
+  }
+});
 module.exports = router;
