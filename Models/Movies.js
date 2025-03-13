@@ -17,11 +17,11 @@ const movieSchema = new mongoose.Schema(
       required: true,
     },
     language: {
-      type: String,
+      type: [String],
       required: true,
     },
     genre: {
-      type: String,
+      type: [String],
       required: true,
     },
     imdbRating: {
@@ -42,11 +42,11 @@ const movieSchema = new mongoose.Schema(
       required: true,
     },
     poster: {
-      type: String, // URL of the movie poster
+      type: String, 
       required: true,
     },
     trailer: {
-      type: String, // YouTube or other video URL
+      type: String, 
       required: true,
     },
     suggestedToAll: {

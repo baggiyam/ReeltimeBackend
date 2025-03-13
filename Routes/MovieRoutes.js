@@ -5,7 +5,7 @@ const Movie = require("../Models/Movies");
 const Watchlist = require("../Models/Watchlist");
 const Favorites = require("../Models/Favorites");
 const WatchedMovies = require("../Models/Watched");
-const { protect } = require("../middleware/authMiddleware");
+const { protect, admin } = require("../middleware/authMiddleware");
 const handleError = require("../utils/errorHandler");
 
 // ➤ Add a new movie
@@ -177,8 +177,24 @@ router.delete("/watchlist/:movieId", protect, async (req, res) => {
   }
 });
 
+router.delete("/favorites/:movieId", protect, async (req, res) => {
+  try {
+    const { movieId } = req.params;
+    const userId = req.user._id;
 
-router.put("/:id", protect, async (req, res) => {
+    // Fix: Use Favorite model, not Watchlist
+    const favorite = await Favorite.findOneAndDelete({ user: userId, movie: movieId });
+
+    if (!favorite) {
+      return res.status(404).json({ message: "Movie not found in favorites" });
+    }
+
+    res.status(200).json({ message: "Movie removed from favorites" });
+  } catch (error) {
+    handleError(res, error, "Error removing movie from favorites");
+  }
+});
+router.put("/:id", protect, admin, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -195,7 +211,6 @@ router.put("/:id", protect, async (req, res) => {
     handleError(res, error, "Error updating movie");
   }
 });
-
 
 router.delete("/:id", protect, async (req, res) => {
   try {

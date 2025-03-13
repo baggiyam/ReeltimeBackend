@@ -143,18 +143,25 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials!" });
     }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "24h",
-    });
+    // Generate JWT including user role
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "24h" }
+    );
 
     res.status(200).json({
       message: "Login successful!",
       token,
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role, // Returning role for frontend use
+      },
     });
   } catch (error) {
     res.status(500).json({ message: "Server error!", error: error.message });
   }
-
 });
 router.post("/resend-code", async (req, res) => {
   const { email } = req.body;
