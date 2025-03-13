@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const Movie = require("../Models/Movies");
 const Watchlist = require("../Models/Watchlist");
 const Favorites = require("../Models/Favorites");
@@ -8,7 +9,7 @@ const { protect } = require("../middleware/authMiddleware");
 const handleError = require("../utils/errorHandler");
 
 // ➤ Add a new movie
-router.post("/", protect, async (req, res) => {
+router.post("/add", protect, async (req, res) => {
   try {
     const { title, description, releaseDate, language, genre, imdbRating, googleRating, poster, trailer, suggestedToAll } = req.body;
     const userAdded = req.user._id; // Get the user ID from auth middleware
@@ -34,7 +35,7 @@ router.post("/", protect, async (req, res) => {
   }
 });
 
-// ➤ Get all movies
+
 router.get("/", async (req, res) => {
   try {
     const movies = await Movie.find();
@@ -44,12 +45,55 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ➤ Get a single movie by ID
+router.get("/watchlist", protect, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const watchlist = await Watchlist.find({ user: userId }).populate("movie");
+
+    res.status(200).json({
+      success: true,
+      data: watchlist.map(entry => entry.movie) || [],
+    });
+  } catch (error) {
+    handleError(res, error, "Error fetching watchlist");
+  }
+});
+
+
+router.get("/favorites", protect, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const favorites = await Favorites.find({ user: userId }).populate("movie");
+
+    res.status(200).json(favorites.map(entry => entry.movie));
+  } catch (error) {
+    handleError(res, error, "Error fetching favorites");
+  }
+});
+
+
+router.get("/watched", protect, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const watchedMovies = await WatchedMovies.find({ user: userId }).populate("movie");
+
+    res.status(200).json(watchedMovies.map(entry => entry.movie));
+  } catch (error) {
+    handleError(res, error, "Error fetching watched movies");
+  }
+});
+
+
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const movie = await Movie.findById(id);
 
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid movie ID" });
+    }
+
+    const movie = await Movie.findById(id);
     if (!movie) return res.status(404).json({ message: "Movie not found" });
 
     res.status(200).json(movie);
@@ -58,35 +102,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// ➤ Update a movie
-router.put("/:id", protect, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updatedMovie = await Movie.findByIdAndUpdate(id, req.body, { new: true });
 
-    if (!updatedMovie) return res.status(404).json({ message: "Movie not found" });
-
-    res.status(200).json(updatedMovie);
-  } catch (error) {
-    handleError(res, error, "Error updating movie");
-  }
-});
-
-// ➤ Delete a movie
-router.delete("/:id", protect, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deletedMovie = await Movie.findByIdAndDelete(id);
-
-    if (!deletedMovie) return res.status(404).json({ message: "Movie not found" });
-
-    res.status(200).json({ message: "Movie deleted successfully" });
-  } catch (error) {
-    handleError(res, error, "Error deleting movie");
-  }
-});
-
-// ➤ Add to Watchlist
 router.post("/add-to-watchlist/:movieId", protect, async (req, res) => {
   try {
     const { movieId } = req.params;
@@ -105,7 +121,7 @@ router.post("/add-to-watchlist/:movieId", protect, async (req, res) => {
   }
 });
 
-// ➤ Add to Favorites
+
 router.post("/add-to-favorites/:movieId", protect, async (req, res) => {
   try {
     const { movieId } = req.params;
@@ -124,7 +140,7 @@ router.post("/add-to-favorites/:movieId", protect, async (req, res) => {
   }
 });
 
-// ➤ Add to Watched Movies
+
 router.post("/add-to-watched/:movieId", protect, async (req, res) => {
   try {
     const { movieId } = req.params;
@@ -143,41 +159,7 @@ router.post("/add-to-watched/:movieId", protect, async (req, res) => {
   }
 });
 
-// ➤ Get user's Watchlist
-router.get("/watchlist", protect, async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const watchlist = await Watchlist.find({ user: userId }).populate("movie");
 
-    res.status(200).json(watchlist.map(entry => entry.movie));
-  } catch (error) {
-    handleError(res, error, "Error fetching watchlist");
-  }
-});
-
-// ➤ Get user's Favorites
-router.get("/favorites", protect, async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const favorites = await Favorites.find({ user: userId }).populate("movie");
-
-    res.status(200).json(favorites.map(entry => entry.movie));
-  } catch (error) {
-    handleError(res, error, "Error fetching favorites");
-  }
-});
-
-// ➤ Get user's Watched Movies
-router.get("/watched", protect, async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const watchedMovies = await WatchedMovies.find({ user: userId }).populate("movie");
-
-    res.status(200).json(watchedMovies.map(entry => entry.movie));
-  } catch (error) {
-    handleError(res, error, "Error fetching watched movies");
-  }
-});
 router.delete("/watchlist/:movieId", protect, async (req, res) => {
   try {
     const { movieId } = req.params;
@@ -194,4 +176,43 @@ router.delete("/watchlist/:movieId", protect, async (req, res) => {
     handleError(res, error, "Error removing movie from watchlist");
   }
 });
+
+
+router.put("/:id", protect, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid movie ID" });
+    }
+
+    const updatedMovie = await Movie.findByIdAndUpdate(id, req.body, { new: true });
+
+    if (!updatedMovie) return res.status(404).json({ message: "Movie not found" });
+
+    res.status(200).json(updatedMovie);
+  } catch (error) {
+    handleError(res, error, "Error updating movie");
+  }
+});
+
+
+router.delete("/:id", protect, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid movie ID" });
+    }
+
+    const deletedMovie = await Movie.findByIdAndDelete(id);
+
+    if (!deletedMovie) return res.status(404).json({ message: "Movie not found" });
+
+    res.status(200).json({ message: "Movie deleted successfully" });
+  } catch (error) {
+    handleError(res, error, "Error deleting movie");
+  }
+});
+
 module.exports = router;

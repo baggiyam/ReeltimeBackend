@@ -109,8 +109,8 @@ router.post("/verification", async (req, res) => {
     await user.save();
 
     const token = jwt.sign(
-      { email: user.email, userId: user._id }, // Payload: email and userId
-      'your_secret_key', // Secret key for signing the JWT (you should store this securely)
+      { email: user.email, userId: user._id }, 
+      process.env.JWT_SECRET, 
       { expiresIn: '1h' } // Token expiration (optional)
     );
 
