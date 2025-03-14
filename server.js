@@ -7,6 +7,7 @@ const authRoutes = require('./Routes/authroutes');
 const User = require('./Models/User'); 
 const Movies=require('./Models/Movies')
 const movieRoutes = require('./Routes/MovieRoutes');
+const indexRoutes = require('./Routes/index');
 
 
 dotenv.config(); // Load environment variables
@@ -30,6 +31,7 @@ mongoose
 
   
 // Use the auth routes for handling signup and login
+app.use("/api", indexRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/movies", movieRoutes);
 
@@ -44,4 +46,11 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 5002;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+process.on('SIGINT', () => {
+  console.log('Shutting down the server...');
+  mongoose.connection.close().then(() => {
+    console.log('MongoDB connection closed');
+    process.exit(0);
+  });
 });

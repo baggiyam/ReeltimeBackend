@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 const router = express.Router();
 const User = require("../Models/User.js");
 const nodemailer = require("nodemailer");
-require("dotenv").config(); // Load environment variables
+require("dotenv").config(); 
 
 // Configure Nodemailer with SMTP
 const transporter = nodemailer.createTransport({
