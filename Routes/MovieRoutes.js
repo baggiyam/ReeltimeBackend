@@ -7,13 +7,30 @@ const Favorites = require("../Models/Favorites");
 const WatchedMovies = require("../Models/Watched");
 const { protect, admin } = require("../middleware/authMiddleware");
 const handleError = require("../utils/errorHandler");
+const { fetchMovieDetails } = require('../utils/fetchMovieDetails');
+
+
+router.post("/fetchDetails", protect, async (req, res) => {
+  try {
+    const { title } = req.body;
+    const tmdbData = await fetchMovieDetails(title);
+
+    if (!tmdbData) {
+      return res.status(404).json({ message: 'No matching movie found. Please check the title and spacing.' });
+    }
+
+    res.status(200).json({ movie: tmdbData });
+  } catch (error) {
+    console.error('Error fetching movie details:', error.message);
+    res.status(500).json({ message: 'Failed to fetch movie details.' });
+  }
+});
 
 // ➤ Add a new movie
 router.post("/add", protect, async (req, res) => {
   try {
-    const { title, description, releaseDate, language, genre, imdbRating, googleRating, poster, trailer, suggestedToAll } = req.body;
-    const userAdded = req.user._id; // Get the user ID from auth middleware
-
+    const { title, description, releaseDate, language, genre, imdbRating, poster, trailer, backdrop } = req.body;
+    const userAdded = req.user._id; 
     const newMovie = new Movie({
       title,
       description,
@@ -21,8 +38,7 @@ router.post("/add", protect, async (req, res) => {
       language,
       genre,
       imdbRating,
-      googleRating,
-      suggestedToAll,
+      backdrop,
       poster,
       trailer,
       userAdded,
@@ -35,6 +51,15 @@ router.post("/add", protect, async (req, res) => {
   }
 });
 
+
+router.get("/", async (req, res) => {
+  try {
+    const movies = await Movie.find();
+    res.status(200).json(movies);
+  } catch (error) {
+    handleError(res, error, "Error fetching all movies");
+  }
+});
 
 router.get("/", async (req, res) => {
   try {

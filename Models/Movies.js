@@ -30,12 +30,6 @@ const movieSchema = new mongoose.Schema(
       min: 0,
   max: 10,
     },
-    googleRating: {
-      type: Number,
-      required: true,
-      min: 0,
-  max: 10,
-    },
     userAdded: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -45,15 +39,18 @@ const movieSchema = new mongoose.Schema(
       type: String, 
       required: true,
     },
+    backdrop: {
+      type: String, 
+      required: true,
+    },
     trailer: {
       type: String, 
       required: true,
     },
-    suggestedToAll: {
-      type: Boolean,
-      default: true,
-    },
+  
+   
   },
+ 
   { timestamps: true }
 );
 
