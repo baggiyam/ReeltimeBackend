@@ -8,7 +8,8 @@ const User = require('./Models/User');
 const Movies=require('./Models/Movies')
 const movieRoutes = require('./Routes/MovieRoutes');
 const indexRoutes = require('./Routes/index');
-const TMDBRoutes=require("./Routes/TMDBRoutes")
+const TMDBRoutes=require("./Routes/TMDBRoutes");
+const  friendRequestRoutes  = require("./Routes/friendrequestroutes");
 
 dotenv.config(); // Load environment variables
 
@@ -34,7 +35,8 @@ mongoose
 app.use("/api", indexRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/movies", movieRoutes);
-app.use("/api/tmdb",TMDBRoutes)
+app.use("/api/tmdb",TMDBRoutes);
+app.use("/api/friends",friendRequestRoutes);
 
 
 // Basic Route

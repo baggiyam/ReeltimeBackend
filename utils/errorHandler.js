@@ -4,6 +4,7 @@ function handleError(res, error, message = "An error occurred", statusCode = 500
       message: message,
       error: error.message || error,
     });
+    
   }
   
   module.exports = handleError;
