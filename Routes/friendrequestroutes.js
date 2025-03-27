@@ -17,7 +17,7 @@ router.post("/send", protect, async (req, res) => {
     });
 
     if (!receiverUser) {
-      console.log("❌ Receiver not found.");
+     
       return res.status(404).json({ message: "Receiver not found." });
     }
 
@@ -25,26 +25,26 @@ router.post("/send", protect, async (req, res) => {
 
     // 🔹 Prevent sending a request to self
     if (senderId === receiverUser._id.toString()) {
-      console.log("❌ Cannot send request to yourself.");
+      
       return res.status(400).json({ message: "You cannot send a request to yourself." });
     }
 
-    // 🔹 Check if a friend request already exists
+    //  Check if a friend request already exists
     const existingRequest = await FriendRequest.findOne({
       sender: senderId,
       receiver: receiverUser._id
     });
 
     if (existingRequest) {
-      console.log("❌ Friend request already sent.");
+   
       return res.status(400).json({ message: "Friend request already sent." });
     }
 
-    // 🔹 Create and save new friend request
+    //  Create and save new friend request
     const newRequest = new FriendRequest({
       sender: senderId,
       receiver: receiverUser._id,
-      status: "pending" // Default status is "pending"
+      status: "pending" 
     });
 
     await newRequest.save();
@@ -67,11 +67,11 @@ router.post("/accept/:id", protect, async (req, res) => {
     if (request.receiver.toString() !== req.user.id)
       return res.status(403).json({ message: "Unauthorized action." });
 
-    // Update request status
+    
     request.status = "accepted";
     await request.save();
 
-    // Add both users to each other's friend list
+   
     const sender = await User.findById(request.sender);
     const receiver = await User.findById(request.receiver);
 
@@ -100,7 +100,7 @@ router.post("/reject/:id", protect, async (req, res) => {
     if (request.receiver.toString() !== req.user.id)
       return res.status(403).json({ message: "Unauthorized action." });
 
-    // Delete the friend request from the database
+  
     await FriendRequest.findByIdAndDelete(req.params.id);
 
     res.json({ message: "Friend request rejected successfully." });
@@ -142,12 +142,12 @@ router.get("/friendlist", protect, async (req, res) => {
     // Fetch the user by the ID of the authenticated user
     const user = await User.findById(req.user.id).populate("friends", "_id username email");
 
-    // Check if the user was found
+    
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
 
-    // Return the list of friends (populated with _id, username, and email)
+
     res.json(user.friends);
   } catch (error) {
     console.error("Error fetching friends:", error);

@@ -1,4 +1,4 @@
-// backend/Models/Movie.js
+
 
 const mongoose = require("mongoose");
 

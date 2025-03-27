@@ -193,7 +193,46 @@ router.get("/:id", async (req, res) => {
     handleError(res, error, "Error fetching movie details");
   }
 });
+router.put("/:movieId", protect, admin, async (req, res) => {
+  try {
+    const { movieId } = req.params;
+    const { title, description, releaseDate, language, genre, imdbRating, poster, trailer, backdrop } = req.body;
 
+    // Check if movie exists
+    const movie = await Movie.findById(movieId);
+    if (!movie) {
+      return res.status(404).json({ message: "Movie not found" });
+    }
+
+    // Check for existing movie with the same title and language
+    const existingMovie = await Movie.findOne({
+      title: { $regex: new RegExp(`^${title}$`, 'i') }, 
+      language: { $in: language }, 
+      _id: { $ne: movieId } // Exclude the current movie from this check
+    });
+
+    if (existingMovie) {
+      return res.status(400).json({ message: "Movie with this title and language already exists!" });
+    }
+
+    // Update movie details
+    movie.title = title || movie.title;
+    movie.description = description || movie.description;
+    movie.releaseDate = releaseDate || movie.releaseDate;
+    movie.language = language || movie.language;
+    movie.genre = genre || movie.genre;
+    movie.imdbRating = imdbRating || movie.imdbRating;
+    movie.poster = poster || movie.poster;
+    movie.trailer = trailer || movie.trailer;
+    movie.backdrop = backdrop || movie.backdrop;
+
+    await movie.save();
+    res.status(200).json({ message: "Movie updated successfully!", movie });
+  } catch (error) {
+    console.error('Error updating movie:', error);
+    res.status(500).json({ message: 'Error updating movie' });
+  }
+});
 // Add movie to the watchlist
 router.post("/add-to-watchlist/:movieId", protect, async (req, res) => {
   try {
@@ -285,73 +324,76 @@ router.delete("/favorites/:movieId", protect, async (req, res) => {
   }
 });
 // Delete movie from favorites
-router.delete("/:movieId", protect, async (req, res) => {
+
+router.delete("/:movieId", async (req, res) => {
   try {
     const { movieId } = req.params;
-    const userId = req.user._id;
 
-    const favorite = await Movie.findOneAndDelete({ user: userId, movie: movieId });
-
-    if (!Movie) {
-      return res.status(404).json({ message: "Movie not found in favorites" });
+    if (!movieId) {
+      return res.status(400).json({ message: "Invalid movie ID" });
     }
 
-    res.status(200).json({ message: "Movie removed from list" });
+    const deletedMovie = await Movie.findByIdAndDelete(movieId);
+
+    if (!deletedMovie) {
+      return res.status(404).json({ message: "Movie not found" });
+    }
+
+    res.status(200).json({ message: "Movie deleted successfully" });
   } catch (error) {
-    handleError(res, error, "Error removing movie ");
+    res.status(500).json({ message: "Error deleting movie" });
   }
 });
 
+
 // Suggest a movie to a friend
-// Suggest a movie to a friend (using movie ID)
+
 router.post("/suggest/:movieId", protect, async (req, res) => {
   try {
     const { movieId } = req.params;  // Movie ID from the URL
     const { friends } = req.body;    // List of friends' IDs from the request body
     
-    // Check if 'friends' array is empty
+   
     if (!friends || friends.length === 0) {
       return res.status(400).json({ message: "Please select at least one friend to suggest the movie." });
     }
 
-    // Get the logged-in user
+
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
 
-    // Fetch the movie details by its ID
+  
     const movie = await Movie.findById(movieId);
     if (!movie) {
       return res.status(404).json({ message: "Movie not found." });
     }
 
-    // Loop through each friend ID and check if they are in the user's friends array
     for (let friendId of friends) {
       if (!user.friends.includes(friendId)) {
         return res.status(400).json({ message: `You are not friends with user ${friendId}.` });
       }
 
-      // Fetch the friend's details
       const friend = await User.findById(friendId);
       if (!friend) {
         return res.status(404).json({ message: `Friend with ID ${friendId} not found.` });
       }
 
-      // Sending the suggestion to the friend
+     
       friend.notifications.push({
         type: "movie_suggestion",
         movieId: movie._id,
-        sender: req.user._id,  // Logged-in user who is suggesting the movie
+        sender: req.user._id,  
         message: `You have a new movie suggestion: ${movie.title}`,
       });
       friend.suggestedMovies.push({
         movieId: movie._id,
-        senderId: req.user._id,  // Logged-in user who suggested the movie
+        senderId: req.user._id,  
         suggestedAt: new Date(),
       });
 
-      await friend.save();  // Save the updated friend notifications
+      await friend.save(); 
     }
 
     return res.status(200).json({ message: "Movie suggestion sent successfully!" });
